@@ -8,6 +8,7 @@ Aplicación principal del intérprete
 from configuracion import CLAVE_API_OPENAI
 from componentes.reconocimiento_voz import ReconocedorVoz
 from componentes.traduccion import Traductor
+from componentes.texto_a_voz import TextoAVoz
 
 def main():
     """
@@ -29,10 +30,18 @@ def main():
     traductor = Traductor()
     print("Traductor inicializado.")
 
+    convertidor = TextoAVoz()
+    print("Convertidor de texto a voz inicializado.")
+
     # Ejemplo de uso 
     texto_ejemplo = "Texto de prueba para reconocimiento de voz."
     texto_traducido = traductor.traducir(texto_ejemplo, "español", "inglés")
     print(f"Ejemplo de traducción: '{texto_ejemplo}' -> '{texto_traducido}'")
     
+    # Ejemplo de conversión a voz
+    ruta_audio = convertidor.texto_a_voz(texto_traducido, "en")
+    if ruta_audio:
+        print(f"Audio generado en: {ruta_audio}")
+
 if __name__ == "__main__":
     main()
