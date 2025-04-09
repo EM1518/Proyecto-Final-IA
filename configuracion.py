@@ -38,3 +38,6 @@ IDIOMAS_SOPORTADOS = {
 
 # Modelo para reconocimiento de voz
 MODELO_WHISPER = "whisper-1"  # Modelo de OpenAI para reconocimiento de voz
+
+# Modelo para traducción
+MODELO_GPT = "gpt-3.5-turbo"  # Modelo de OpenAI para traducción
