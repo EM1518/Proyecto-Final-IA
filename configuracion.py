@@ -35,3 +35,6 @@ IDIOMAS_SOPORTADOS = {
     "español": "es",
     "inglés": "en"
 }
+
+# Modelo para reconocimiento de voz
+MODELO_WHISPER = "whisper-1"  # Modelo de OpenAI para reconocimiento de voz

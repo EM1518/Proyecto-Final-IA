@@ -6,6 +6,7 @@ Aplicación principal del intérprete
 """
 
 from configuracion import CLAVE_API_OPENAI
+from componentes.reconocimiento_voz import ReconocedorVoz
 
 def main():
     """
@@ -20,7 +21,9 @@ def main():
     else:
         print("Configuración cargada correctamente.")
     
-    print("Configuración inicial completa.")
-
+    # Inicializar el reconocedor de voz
+    reconocedor = ReconocedorVoz()
+    print("Reconocedor de voz inicializado.")
+    
 if __name__ == "__main__":
     main()
