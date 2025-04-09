@@ -1,7 +1,7 @@
 # Proyecto-de-Final-IA
 
-## Nombre
+## Elisanna María Martínez Sánchez
 
-## Matrícula
+## 23-EISN-2-074
 
-## Proyecto
+## Intérprete en tiempo real
