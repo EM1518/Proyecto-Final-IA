@@ -29,11 +29,21 @@ CLAVE_API_OPENAI = os.getenv("OPENAI_API_KEY")
 
 # Configuración básica
 TASA_MUESTREO = 16000  # Frecuencia de muestreo en Hz
+DURACION = 10  # Duración máxima de grabación en segundos 
 
 # Idiomas soportados 
 IDIOMAS_SOPORTADOS = {
     "español": "es",
-    "inglés": "en"
+    "inglés": "en",
+    "francés": "fr",
+    "alemán": "de",
+    "italiano": "it",
+    "portugués": "pt",
+    "chino": "zh",
+    "japonés": "ja",
+    "coreano": "ko",
+    "ruso": "ru",
+    "árabe": "ar"
 }
 
 # Modelo para reconocimiento de voz

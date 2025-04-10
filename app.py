@@ -5,16 +5,22 @@
 Aplicación principal del intérprete 
 """
 
-from configuracion import CLAVE_API_OPENAI
+from configuracion import CLAVE_API_OPENAI, DIRECTORIO_AUDIO
 from componentes.reconocimiento_voz import ReconocedorVoz
 from componentes.traduccion import Traductor
 from componentes.texto_a_voz import TextoAVoz
+from utilidades.ayudantes import obtener_codigo_idioma, limpiar_archivos_viejos
 
 def main():
     """
     Función principal de la aplicación.
     """
     print("Inicializando aplicación...")
+
+    # Limpiar archivos temporales antiguos
+    archivos_eliminados = limpiar_archivos_viejos(DIRECTORIO_AUDIO, 24)
+    if archivos_eliminados > 0:
+        print(f"Se eliminaron {archivos_eliminados} archivos de audio antiguos.")
     
     # Verificar configuración
     if not CLAVE_API_OPENAI:
@@ -33,13 +39,24 @@ def main():
     convertidor = TextoAVoz()
     print("Convertidor de texto a voz inicializado.")
 
-    # Ejemplo de uso 
+    # Ejemplo de uso con utilidades
     texto_ejemplo = "Texto de prueba para reconocimiento de voz."
-    texto_traducido = traductor.traducir(texto_ejemplo, "español", "inglés")
+    idioma_origen = "español"
+    idioma_destino = "inglés"
+    
+    # Obtener códigos de idioma
+    codigo_origen = obtener_codigo_idioma(idioma_origen)
+    codigo_destino = obtener_codigo_idioma(idioma_destino)
+    
+    print(f"Código de idioma para {idioma_origen}: {codigo_origen}")
+    print(f"Código de idioma para {idioma_destino}: {codigo_destino}")
+
+    # Ejemplo de traducción y síntesis
+    texto_traducido = traductor.traducir(texto_ejemplo, idioma_origen, idioma_destino)
     print(f"Ejemplo de traducción: '{texto_ejemplo}' -> '{texto_traducido}'")
     
     # Ejemplo de conversión a voz
-    ruta_audio = convertidor.texto_a_voz(texto_traducido, "en")
+    ruta_audio = convertidor.texto_a_voz(texto_traducido, codigo_destino)
     if ruta_audio:
         print(f"Audio generado en: {ruta_audio}")
 
