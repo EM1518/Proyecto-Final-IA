@@ -10,7 +10,7 @@ import tempfile
 import openai
 import numpy as np
 import soundfile as sf
-from configuracion import CLAVE_API_OPENAI, TASA_MUESTREO
+from configuracion import CLAVE_API_OPENAI, TASA_MUESTREO, MODELO_WHISPER
 
 # Configurar la API key de OpenAI
 openai.api_key = CLAVE_API_OPENAI
@@ -40,10 +40,20 @@ class ReconocedorVoz:
             if tamano_archivo == 0:
                 print("El archivo de audio está vacío")
                 return None
-          
-            print(f"Transcribiendo audio desde {ruta_archivo_audio}...")
             
-            return "Texto de prueba para reconocimiento de voz."
+            # Abrir el archivo de audio
+            with open(ruta_archivo_audio, "rb") as archivo_audio:
+                # Llamar a la API de Whisper
+                respuesta = openai.audio.transcriptions.create(
+                    model=MODELO_WHISPER,
+                    file=archivo_audio,
+                    language=idioma
+                )
+                     
+            # Extraer y devolver el texto transcrito
+            texto_transcrito = respuesta.text
+            print(f"Texto transcrito: {texto_transcrito}")
+            return texto_transcrito
             
         except Exception as e:
             print(f"Error en la transcripción: {str(e)}")

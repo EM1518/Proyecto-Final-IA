@@ -30,15 +30,32 @@ class Traductor:
         
         try:
             
-            print(f"Traduciendo de {idioma_origen} a {idioma_destino}: {texto}")
+            # Preparar el mensaje para la API
+            prompt = f"""Traduce el siguiente texto de {idioma_origen} a {idioma_destino}.
+                       Por favor, proporciona solo la traducción sin explicaciones ni texto adicional:
+                       
+                       "{texto}"
+                       """
             
-            # Simulación de traducción para pruebas 
-            if idioma_origen.lower() == "español" and idioma_destino.lower() == "inglés":
-                return "This is a test translation from Spanish to English."
-            elif idioma_origen.lower() == "inglés" and idioma_destino.lower() == "español":
-                return "Esta es una traducción de prueba de inglés a español."
-            else:
-                return f"Texto traducido de {idioma_origen} a {idioma_destino}"
+            # Llamar a la API de OpenAI
+            respuesta = openai.chat.completions.create(
+                model=self.modelo,
+                messages=[
+                    {"role": "system", "content": "Eres un traductor preciso y eficiente. Proporciona solo la traducción solicitada sin ningún texto adicional."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,  # Menor temperatura para traducciones más precisas
+                max_tokens=1024
+            )
+            
+            # Extraer y devolver el texto traducido
+            texto_traducido = respuesta.choices[0].message.content.strip()
+            
+            # Eliminar comillas si el modelo las incluye
+            if texto_traducido.startswith('"') and texto_traducido.endswith('"'):
+                texto_traducido = texto_traducido[1:-1]
+                
+            return texto_traducido
             
         except Exception as e:
             print(f"Error en la traducción: {str(e)}")
