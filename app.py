@@ -28,7 +28,7 @@ texto_a_voz = TextoAVoz()
 # Historial de conversación
 historial_conversacion = []
 
-# CSS para mejorar diseño inicial
+# CSS para el diseño de chat
 css = """
 .conversation-container {
     max-height: 600px;
@@ -161,38 +161,131 @@ css = """
     padding: 15px;
     margin-bottom: 10px;
 }
+
+.error-message {
+    color: #e74c3c;
+    background: rgba(231, 76, 60, 0.2);
+    border-left: 3px solid #e74c3c;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 0 5px 5px 0;
+    font-size: 14px;
+    animation: fadeIn 0.3s;
+}
+
+.success-message {
+    color: #2ecc71;
+    background: rgba(46, 204, 113, 0.1);
+    border-left: 3px solid #2ecc71;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 0 5px 5px 0;
+    font-size: 14px;
+    animation: fadeIn 0.3s;
+}
+
+.info-message {
+    color: #3498db;
+    background: rgba(52, 152, 219, 0.1);
+    border-left: 3px solid #3498db;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 0 5px 5px 0;
+    font-size: 14px;
+    animation: fadeIn 0.3s;
+}
+
+.message-area {
+    min-height: 60px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
 """
 
-def procesar_audio1(audio, idioma_origen, idioma_destino, chatbox):
+def crear_mensaje_error(mensaje):
+    """
+    Crea el HTML para un mensaje de error.
+    """
+    return f"""
+    <div class="error-message">
+        ⚠️ {mensaje}
+    </div>
+    """
+
+def crear_mensaje_exito(mensaje):
+    """
+    Crea el HTML para un mensaje de éxito.
+    """
+    return f"""
+    <div class="success-message">
+        ✅ {mensaje}
+    </div>
+    """
+
+def crear_mensaje_info(mensaje):
+    """
+    Crea el HTML para un mensaje informativo.
+    """
+    return f"""
+    <div class="info-message">
+        ℹ️ {mensaje}
+    </div>
+    """
+
+def procesar_audio1(audio, idioma_origen, idioma_destino, visualizacion_chat):
     """
     Procesa el audio grabado por el Hablante 1.
     """
-    # Si no hay audio, retornar sin cambios
+    # Si no hay audio, mostrar error
     if audio is None:
-        return chatbox, None, None
+        mensaje_error = "No se ha grabado ningún audio. Por favor, graba un mensaje antes de traducir."
+        return visualizacion_chat, crear_mensaje_error(mensaje_error), None, None
 
     # Obtener códigos de idioma
     codigo_origen = obtener_codigo_idioma(idioma_origen)
     codigo_destino = obtener_codigo_idioma(idioma_destino)
 
     # Transcribir el audio
-    texto_original = reconocedor_voz.reconocer_voz_desde_archivo(audio, codigo_origen)
-    
-    if not texto_original:
-        return chatbox + f"\n\n❌ **Error**: No se pudo transcribir el audio. Por favor, habla claramente.", None, None
+    try:
+        texto_original = reconocedor_voz.reconocer_voz_desde_archivo(audio, codigo_origen)
+        
+        if not texto_original:
+            mensaje_error = "No se pudo transcribir el audio. Por favor, habla más claramente o acércate al micrófono."
+            return visualizacion_chat, crear_mensaje_error(mensaje_error), None, None
+    except Exception as e:
+        mensaje_error = f"Error en la transcripción: {str(e)}"
+        return visualizacion_chat, crear_mensaje_error(mensaje_error), None, None
     
     # Traducir el texto
-    texto_traducido = traductor.traducir(texto_original, idioma_origen, idioma_destino)
+    try:
+        texto_traducido = traductor.traducir(texto_original, idioma_origen, idioma_destino)
+        
+        if not texto_traducido:
+            mensaje_error = "No se pudo traducir el texto. Por favor, inténtalo de nuevo."
+            return visualizacion_chat, crear_mensaje_error(mensaje_error), None, None
+    except Exception as e:
+        mensaje_error = f"Error en la traducción: {str(e)}"
+        return visualizacion_chat, crear_mensaje_error(mensaje_error), None, None
     
-    if not texto_traducido:
-        return chatbox + f"\n\n❌ **Error**: No se pudo traducir el texto. Inténtalo de nuevo.", None, None
     
     # Convertir el texto traducido a voz
-    archivo_audio = texto_a_voz.texto_a_voz(texto_traducido, codigo_destino)
+    try:
+        archivo_audio = texto_a_voz.texto_a_voz(texto_traducido, codigo_destino)
+        
+        if not archivo_audio or not os.path.exists(archivo_audio):
+            mensaje_error = "No se pudo generar el audio para la traducción."
+            return visualizacion_chat, crear_mensaje_error(mensaje_error), None, None
+    except Exception as e:
+        mensaje_error = f"Error en la síntesis de voz: {str(e)}"
+        return visualizacion_chat, crear_mensaje_error(mensaje_error), None, None
     
     # Copiar el archivo de audio a una ubicación permanente
-    ruta_permanente = os.path.join(DIRECTORIO_AUDIO, f"audio_{int(time.time())}_{random.randint(1000, 9999)}.mp3")
-    shutil.copy2(archivo_audio, ruta_permanente)
+    try:
+        ruta_permanente = os.path.join(DIRECTORIO_AUDIO, f"audio_{int(time.time())}_{random.randint(1000, 9999)}.mp3")
+        shutil.copy2(archivo_audio, ruta_permanente)
+    except Exception as e:
+        mensaje_error = f"Error al guardar el archivo de audio: {str(e)}"
+        return visualizacion_chat, crear_mensaje_error(mensaje_error), None, None
     
     # Guardar en el historial
     historial_conversacion.append({
@@ -209,40 +302,66 @@ def procesar_audio1(audio, idioma_origen, idioma_destino, chatbox):
     # Actualizar el chatbox con formato HTML personalizado
     chat_actualizado = crear_html_chat()
     
-    # Retornar el chat actualizado, el audio para reproducción automática y None para limpiar el componente de audio
-    return chat_actualizado, archivo_audio, None
+    # Mensaje de éxito
+    mensaje_exito = f"Mensaje traducido correctamente de {idioma_origen} a {idioma_destino}"
+
+    # Retornar el chat actualizado, mensaje para área de mensajes, audio para reproducción automática y None para limpiar
+    return chat_actualizado, crear_mensaje_exito(mensaje_exito), archivo_audio, None
 
 
-def procesar_audio2(audio, idioma_origen, idioma_destino, chatbox):
+def procesar_audio2(audio, idioma_origen, idioma_destino, visualizacion_chat):
     """
     Procesa el audio grabado por el Hablante 2 (intercambiando los idiomas).
     """
-    # Si no hay audio, retornar sin cambios
+    # Si no hay audio, mostrar error
     if audio is None:
-        return chatbox, None, None
+        mensaje_error = "No se ha grabado ningún audio. Por favor, graba un mensaje antes de traducir."
+        return visualizacion_chat, crear_mensaje_error(mensaje_error), None, None
     
     # Para el Hablante 2, los idiomas se invierten
     codigo_destino = obtener_codigo_idioma(idioma_origen)
     codigo_origen = obtener_codigo_idioma(idioma_destino)
     
     # Transcribir el audio
-    texto_original = reconocedor_voz.reconocer_voz_desde_archivo(audio, codigo_origen)
-    
-    if not texto_original:
-        return chatbox + f"\n\n❌ **Error**: No se pudo transcribir el audio. Por favor, habla claramente.", None, None
+    try:
+        texto_original = reconocedor_voz.reconocer_voz_desde_archivo(audio, codigo_origen)
+        
+        if not texto_original:
+            mensaje_error = "No se pudo transcribir el audio. Por favor, habla más claramente o acércate al micrófono."
+            return visualizacion_chat, crear_mensaje_error(mensaje_error), None, None
+    except Exception as e:
+        mensaje_error = f"Error en la transcripción: {str(e)}"
+        return visualizacion_chat, crear_mensaje_error(mensaje_error), None, None
     
     # Traducir el texto
-    texto_traducido = traductor.traducir(texto_original, idioma_destino, idioma_origen)
-    
-    if not texto_traducido:
-        return chatbox + f"\n\n❌ **Error**: No se pudo traducir el texto. Inténtalo de nuevo.", None, None
+    try:
+        texto_traducido = traductor.traducir(texto_original, idioma_destino, idioma_origen)
+        
+        if not texto_traducido:
+            mensaje_error = "No se pudo traducir el texto. Por favor, inténtalo de nuevo."
+            return visualizacion_chat, crear_mensaje_error(mensaje_error), None, None
+    except Exception as e:
+        mensaje_error = f"Error en la traducción: {str(e)}"
+        return visualizacion_chat, crear_mensaje_error(mensaje_error), None, None
     
     # Convertir el texto traducido a voz
-    archivo_audio = texto_a_voz.texto_a_voz(texto_traducido, codigo_destino)
+    try:
+        archivo_audio = texto_a_voz.texto_a_voz(texto_traducido, codigo_destino)
+        
+        if not archivo_audio or not os.path.exists(archivo_audio):
+            mensaje_error = "No se pudo generar el audio para la traducción."
+            return visualizacion_chat, crear_mensaje_error(mensaje_error), None, None
+    except Exception as e:
+        mensaje_error = f"Error en la síntesis de voz: {str(e)}"
+        return visualizacion_chat, crear_mensaje_error(mensaje_error), None, None    
     
     # Copiar el archivo de audio a una ubicación permanente
-    ruta_permanente = os.path.join(DIRECTORIO_AUDIO, f"audio_{int(time.time())}_{random.randint(1000, 9999)}.mp3")
-    shutil.copy2(archivo_audio, ruta_permanente)
+    try:
+        ruta_permanente = os.path.join(DIRECTORIO_AUDIO, f"audio_{int(time.time())}_{random.randint(1000, 9999)}.mp3")
+        shutil.copy2(archivo_audio, ruta_permanente)
+    except Exception as e:
+        mensaje_error = f"Error al guardar el archivo de audio: {str(e)}"
+        return visualizacion_chat, crear_mensaje_error(mensaje_error), None, None
     
     # Guardar en el historial
     historial_conversacion.append({
@@ -259,8 +378,11 @@ def procesar_audio2(audio, idioma_origen, idioma_destino, chatbox):
     # Actualizar el chatbox con formato HTML personalizado
     chat_actualizado = crear_html_chat()
     
-    # Retornar el chat actualizado, el audio para reproducción automática y None para limpiar el componente de audio
-    return chat_actualizado, archivo_audio, None
+    # Mensaje de éxito
+    mensaje_exito = f"Mensaje traducido correctamente de {idioma_destino} a {idioma_origen}"
+
+    # Retornar el chat actualizado, mensaje para área de mensajes, audio para reproducción automática y None para limpiar
+    return chat_actualizado, crear_mensaje_exito(mensaje_exito), archivo_audio, None
 
 
 def crear_html_chat():
@@ -303,7 +425,8 @@ def limpiar_conversacion():
     Limpia el historial de conversación.
     """
     historial_conversacion.clear()
-    return crear_html_chat(), None, None, None
+    mensaje_info = "Se ha borrado el historial de conversación."
+    return crear_html_chat(), crear_mensaje_info(mensaje_info), None, None
 
 # Definir la interfaz de Gradio
 with gr.Blocks(title="Intérprete en Tiempo Real", theme=gr.themes.Soft(), css=css) as demo:
@@ -331,8 +454,11 @@ with gr.Blocks(title="Intérprete en Tiempo Real", theme=gr.themes.Soft(), css=c
                 container=True
             )
     
-        # Área de chat
+    # Área de chat
     visualizacion_chat = gr.HTML(crear_html_chat())
+    
+    # Área de mensajes 
+    area_mensajes = gr.HTML("", elem_classes=["message-area"])
     
     # Audio para reproducción automática
     audio_reproduccion = gr.Audio(label="", visible=False, autoplay=True)
@@ -365,23 +491,44 @@ with gr.Blocks(title="Intérprete en Tiempo Real", theme=gr.themes.Soft(), css=c
     boton_traducir1.click(
         fn=procesar_audio1,
         inputs=[entrada_audio1, idioma_origen, idioma_destino, visualizacion_chat],
-        outputs=[visualizacion_chat, audio_reproduccion, entrada_audio1],
+        outputs=[visualizacion_chat, area_mensajes, audio_reproduccion, entrada_audio1],
         queue=False
     )
     
     boton_traducir2.click(
         fn=procesar_audio2,
         inputs=[entrada_audio2, idioma_origen, idioma_destino, visualizacion_chat],
-        outputs=[visualizacion_chat, audio_reproduccion, entrada_audio2],
+        outputs=[visualizacion_chat, area_mensajes, audio_reproduccion, entrada_audio2],
         queue=False
     )
     
     boton_limpiar.click(
         fn=limpiar_conversacion,
         inputs=[],
-        outputs=[visualizacion_chat, audio_reproduccion, entrada_audio1, entrada_audio2]
+        outputs=[visualizacion_chat, area_mensajes, audio_reproduccion, entrada_audio1],
+        queue=False
+    )
+
+    # Cambio de idiomas
+    def actualizar_mensaje_cambio_idioma(idioma_origen, idioma_destino):
+        mensaje_info = f"Idiomas configurados: {idioma_origen} → {idioma_destino}"
+        return crear_mensaje_info(mensaje_info)
+    
+    idioma_origen.change(
+        fn=actualizar_mensaje_cambio_idioma,
+        inputs=[idioma_origen, idioma_destino],
+        outputs=[area_mensajes],
+        queue=False
     )
     
+    idioma_destino.change(
+        fn=actualizar_mensaje_cambio_idioma,
+        inputs=[idioma_origen, idioma_destino],
+        outputs=[area_mensajes],
+        queue=False
+    )
+    
+    # Instrucciones
     # Instrucciones
     with gr.Accordion("Instrucciones de uso", open=False):
         gr.Markdown("""
@@ -404,6 +551,12 @@ with gr.Blocks(title="Intérprete en Tiempo Real", theme=gr.themes.Soft(), css=c
         4. La traducción se mostrará en la ventana de chat y se reproducirá automáticamente
         
         5. Puedes borrar la conversación en cualquier momento con el botón "Borrar Conversación"
+        
+        ### Solución de problemas:
+        
+        - Si no se detecta tu voz, intenta hablar más fuerte o acércate al micrófono
+        - Asegúrate de que el micrófono tenga permisos en tu navegador
+        - Si aparece un mensaje de error, sigue las instrucciones mostradas
         """)
 
 # Lanzar la aplicación

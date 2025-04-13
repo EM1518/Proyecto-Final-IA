@@ -27,7 +27,7 @@ os.makedirs(DIRECTORIO_IMAGENES, exist_ok=True)
 # Clave API de OpenAI
 CLAVE_API_OPENAI = os.getenv("OPENAI_API_KEY")
 
-# Configuración básica
+# Configuración de grabación de audio
 TASA_MUESTREO = 16000  # Frecuencia de muestreo en Hz
 DURACION = 10  # Duración máxima de grabación en segundos 
 
