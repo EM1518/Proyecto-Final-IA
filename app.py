@@ -529,7 +529,6 @@ with gr.Blocks(title="Intérprete en Tiempo Real", theme=gr.themes.Soft(), css=c
     )
     
     # Instrucciones
-    # Instrucciones
     with gr.Accordion("Instrucciones de uso", open=False):
         gr.Markdown("""
         ## Cómo usar esta aplicación
